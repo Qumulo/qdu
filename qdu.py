@@ -37,6 +37,7 @@
 
 # Import python libraries
 import getopt
+from math import log
 import os
 import sys
 import time
@@ -50,7 +51,7 @@ import qumulo.lib.auth
 import qumulo.lib.opts
 import qumulo.lib.request
 import qumulo.rest
-qumulo.lib.opts.import_rest()
+
 
 #### Classes
 class Args(object):
@@ -162,6 +163,23 @@ def portisopen(host, port):
         return True
     else:
         return False
+
+### make a nicely-formaatted size string
+def sizeof_fmt(num):
+    """Human friendly file size"""
+
+    unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2])
+
+    if num > 1:
+        exponent = min(int(log(num, 1024)), len(unit_list) - 1)
+        quotient = float(num) / 1024**exponent
+        unit, num_decimals = unit_list[exponent]
+        format_string = '{:.%sf} {}' % (num_decimals)
+        return format_string.format(quotient, unit)
+    if num == 0:
+        return '0 bytes'
+    if num == 1:
+        return '1 byte'
     
 ### Main subroutine
 def main():
@@ -177,9 +195,13 @@ def main():
                 if pathmounted is not "/": qefspath = pathmounted+qefspath
                 data = qumulo.rest.fs.read_dir_aggregates(conninfo, creds, qefspath)
                 size = int(data[0]['total_capacity'])
+                
                 if args.k:
                     size = size/1024
-                print size,file 
+                else:
+                    size = sizeof_fmt(size)
+
+                print size, file 
             else:
                 if args.k:
                     du = subprocess.Popen(["du", "-s", "-k", file], stdout=subprocess.PIPE)
