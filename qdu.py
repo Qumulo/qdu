@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2013 Qumulo, Inc.
+# Copyright (c) 2015 Qumulo, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +22,7 @@
 
  -s                                 Display an entry for each specified file.  (Equivalent to -d 0)
  -k                                 Display block counts in 1024-byte (1-Kbyte) blocks.
+ --time                             Equivalent to du --time --time-style=long-iso
 
 [-u | --user] username              Use 'username' for authentication
                                         (defaults to 'admin')
@@ -45,6 +46,8 @@ import re
 import subprocess
 import socket
 
+from dateutil import parser, tz
+
 # Import Qumulo REST libraries
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import qumulo.lib.auth
@@ -67,6 +70,7 @@ class Args(object):
         self.files = ['.']
         self.s = None
         self.k = None
+        self.time = True
 
         opts = {}
         try:
@@ -90,7 +94,9 @@ class Args(object):
             elif opt in ("-s"):
                 self.s = True  
             elif opt in ("-k"):
-                self.k = True  
+                self.k = True
+            elif top in ("--time"):
+                self.time = True
             elif opt in ("--port", "-P"):
                 self.port = arg
             elif opt in ("--user", "-u"):
@@ -103,27 +109,27 @@ class Args(object):
 #### Subroutines
 def login(host, user, passwd, port):
     '''Obtain credentials from the REST server'''
-    conninfo = None
-    creds = None
+    connection = None
+    credentials = None
 
     try:
         # Create a connection to the REST server
-        conninfo = qumulo.lib.request.Connection(host, int(port))
+        connection = qumulo.lib.request.Connection(host, int(port))
 
         # Provide username and password to retreive authentication tokens
         # used by the credentials object
         login_results, _ = qumulo.rest.auth.login(
-                conninfo, None, user, passwd)
+                connection, None, user, passwd)
 
         # Create the credentials object which will be used for
         # authenticating rest calls
-        creds = qumulo.lib.auth.Credentials.from_login_response(login_results)
+        credentials = qumulo.lib.auth.Credentials.from_login_response(login_results)
     except Exception, excpt:
         print "Error connecting to the REST server: %s" % excpt
         print __doc__
         sys.exit(1)
 
-    return (conninfo, creds)
+    return (connection, credentials)
 
 def pingserver(server):
     ping = subprocess.Popen(
@@ -180,7 +186,39 @@ def sizeof_fmt(num):
         return '0 bytes'
     if num == 1:
         return '1 byte'
-    
+
+
+def process_folder(connection, credentials, path, k, show_time):
+
+    data = qumulo.rest.fs.read_dir_aggregates(connection, credentials, path)
+
+    size = int(data[0]['total_capacity'])
+    max_change_time = data[0]['max_change_time']
+    utc = parser.parse(max_change_time)
+
+    # convert datetime to local timezone
+    from_zone = tz.tzutc()
+    to_zone = tz.tzlocal()
+    utc = utc.replace(tzinfo=from_zone)
+    most_recent_change = utc.astimezone(to_zone)
+
+
+    if show_time:
+        response = qumulo.rest.fs.read_entire_directory(connection, credentials,
+                                             page_size=5000, path=path)
+        for r in response:
+            for entry in r.data['files']:
+                if entry['type'] == 'FS_FILE_TYPE_DIRECTORY':
+                    new_path = path + "/" + entry['name']
+                    process_folder(connection, credentials, new_path, k, show_time)
+
+    if k:
+        size = str(size/1024)
+    else:
+        size = sizeof_fmt(size)
+
+    print size + "\t" + most_recent_change.strftime("%Y-%m-%d %H:%M") + "\t" + path
+
 ### Main subroutine
 def main():
     
@@ -189,25 +227,21 @@ def main():
     if args.s:
         for file in args.files:
             isqumulo, host, mountpoint, pathmounted = checkfs(file, args.port)
-            if isqumulo:
-                (conninfo, creds) = login(host, args.user, args.passwd, args.port)
-                qefspath = file.replace(mountpoint,"")
-                if pathmounted is not "/": qefspath = pathmounted+qefspath
-                data = qumulo.rest.fs.read_dir_aggregates(conninfo, creds, qefspath)
-                size = int(data[0]['total_capacity'])
-                
-                if args.k:
-                    size = size/1024
-                else:
-                    size = sizeof_fmt(size)
 
-                print size, file 
+            if isqumulo:
+                (connection, credentials) = login(host, args.user, args.passwd, args.port)
+                qefspath = file.replace(mountpoint,"")
+
+                if pathmounted is not "/": qefspath = pathmounted+qefspath
+
+                process_folder(connection, credentials, qefspath, args.k, args.time)
+
             else:
                 if args.k:
-                    du = subprocess.Popen(["du", "-s", "-k", file], stdout=subprocess.PIPE)
+                    du = subprocess.Popen(["du", "-s", "-k", "--time", "--time-style=long-iso", file], stdout=subprocess.PIPE)
                     print(du.communicate()[0]),
                 else:
-                    du = subprocess.Popen(["du", "-s", file], stdout=subprocess.PIPE)
+                    du = subprocess.Popen(["du", "-s", "--time", "--time-style=long-iso", file], stdout=subprocess.PIPE)
                     print(du.communicate()[0]),
     else:
         print "So far I've only implemented the -s -k switches... sorry..."
