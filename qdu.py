@@ -110,20 +110,23 @@ class Args(object):
 def login(host, user, passwd, port):
     '''Obtain credentials from the REST server'''
     connection = None
-    credentials = None
+    credentials = qumulo.lib.auth.get_credentials(
+                    qumulo.lib.auth.credential_store_filename())
 
     try:
         # Create a connection to the REST server
         connection = qumulo.lib.request.Connection(host, int(port))
 
-        # Provide username and password to retreive authentication tokens
-        # used by the credentials object
-        login_results, _ = qumulo.rest.auth.login(
-                connection, None, user, passwd)
+        if credentials is None:
+            # Provide username and password to retreive authentication tokens
+            # used by the credentials object
+            login_results, _ = qumulo.rest.auth.login(
+                    connection, None, user, passwd)
 
-        # Create the credentials object which will be used for
-        # authenticating rest calls
-        credentials = qumulo.lib.auth.Credentials.from_login_response(login_results)
+            # Create the credentials object which will be used for
+            # authenticating rest calls
+            credentials = (qumulo.lib.auth.Credentials
+                           .from_login_response)(login_results)
     except Exception, excpt:
         print "Error connecting to the REST server: %s" % excpt
         print __doc__
