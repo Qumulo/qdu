@@ -12,12 +12,6 @@
 # the License.
 
 '''
-=== Required:
-
-[-i | --ip | --host] ip|hostname    An ip address or hostname of a node in
-                                        the cluster; use 'localhost' when
-                                        running directly on the node
-
 === Options:
 
  -s                                 Display an entry for each specified file.  (Equivalent to -d 0)
