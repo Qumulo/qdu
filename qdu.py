@@ -84,6 +84,11 @@ class Args(object):
         except getopt.GetoptError, msg:
             print msg
             print __doc__
+            try:
+                # os.EX_USAGE exists only on Unix systems
+                sys.exit(os.EX_USAGE)
+            except:
+                sys.exit(1)
 
         if _arg: self.files = _arg
 
@@ -104,7 +109,11 @@ class Args(object):
             elif opt in ("--pass", "-p"):
                 self.passwd = arg
             else:
-                sys.exit(1)
+                try:
+                    # os.EX_USAGE exists only on Unix systems
+                    sys.exit(os.EX_USAGE)
+                except:
+                    sys.exit(1)
 
 #### Subroutines
 def login(host, user, passwd, port):
