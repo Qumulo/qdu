@@ -94,7 +94,7 @@ class Args(object):
                 self.s = True  
             elif opt in ("-k"):
                 self.k = True
-            elif top in ("--time"):
+            elif opt in ("--time"):
                 self.time = True
             elif opt in ("--port", "-P"):
                 self.port = arg
