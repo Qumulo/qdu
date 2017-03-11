@@ -113,8 +113,7 @@ class Args(object):
 def login(host, user, passwd, port):
     '''Obtain credentials from the REST server'''
     connection = None
-    credentials = qumulo.lib.auth.get_credentials(
-                    qumulo.lib.auth.credential_store_filename())
+    credentials = None
 
     try:
         # Create a connection to the REST server
@@ -198,32 +197,16 @@ def process_folder(connection, credentials, path, k, show_time):
 
     data = qumulo.rest.fs.read_dir_aggregates(connection, credentials, path)
 
-    size = int(data[0]['total_capacity'])
-    max_change_time = data[0]['max_change_time']
-    utc = parser.parse(max_change_time)
-
-    # convert datetime to local timezone
-    from_zone = tz.tzutc()
-    to_zone = tz.tzlocal()
-    utc = utc.replace(tzinfo=from_zone)
-    most_recent_change = utc.astimezone(to_zone)
-
-
-    if show_time:
-        response = qumulo.rest.fs.read_entire_directory(connection, credentials,
-                                             page_size=5000, path=path)
-        for r in response:
-            for entry in r.data['files']:
-                if entry['type'] == 'FS_FILE_TYPE_DIRECTORY':
-                    new_path = path + "/" + entry['name']
-                    process_folder(connection, credentials, new_path, k, show_time)
+    size = int(data[0]['total_data'])
+    total_files = int(data[0]['total_files'])
 
     if k:
         size = str(size/1024)
     else:
         size = sizeof_fmt(size)
 
-    print size + "\t" + most_recent_change.strftime("%Y-%m-%d %H:%M") + "\t" + path
+    print size + "\t" + path
+
 
 ### Main subroutine
 def main():
@@ -233,22 +216,15 @@ def main():
     if args.s:
         for file in args.files:
             isqumulo, host, mountpoint, pathmounted = checkfs(file, args.port)
-
             if isqumulo:
                 (connection, credentials) = login(host, args.user, args.passwd, args.port)
-                qefspath = file.replace(mountpoint,"")
-
-                if pathmounted is not "/": qefspath = pathmounted+qefspath
-
-                process_folder(connection, credentials, qefspath, args.k, args.time)
-
+                path = os.path.abspath(file)
+                if path == ".":
+                    path = os.getcwd() + "/"
+                path = path.replace(mountpoint, '')
+                process_folder(connection, credentials, path, args.k, args.time)
             else:
-                if args.k:
-                    du = subprocess.Popen(["du", "-s", "-k", "--time", "--time-style=long-iso", file], stdout=subprocess.PIPE)
-                    print(du.communicate()[0]),
-                else:
-                    du = subprocess.Popen(["du", "-s", "--time", "--time-style=long-iso", file], stdout=subprocess.PIPE)
-                    print(du.communicate()[0]),
+                print("This is not a path mounted against a Qumulo cluster.")
     else:
         print "So far I've only implemented the -s -k switches... sorry..."
         sys.exit()
