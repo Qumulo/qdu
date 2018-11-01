@@ -42,5 +42,7 @@ where
     [path] is a file path or mount point for a Qumulo cluster
 
 
-
+Example:
+   
+    python ./qdu.py -s -k --user admin --pass password /mnt/cluster/directory
 
