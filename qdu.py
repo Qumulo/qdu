@@ -20,7 +20,7 @@
 
 [-u | --user] username              Use 'username' for authentication
                                         (defaults to 'admin')
-[-p | --passwd] password            Use 'password' for authentication
+[-p | --pass] password            Use 'password' for authentication
                                         (defaults to 'admin')
 [-P | --port] number                Use 'number' for the API server port
                                         (defaults to 8000)
