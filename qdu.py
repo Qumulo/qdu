@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2015 Qumulo, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -75,9 +75,9 @@ class Args(object):
                                      "pass=",
                                      "port=",
                                     ])
-        except getopt.GetoptError, msg:
-            print msg
-            print __doc__
+        except getopt.GetoptError as err:
+            print(err)
+            print(__doc__)
             try:
                 # os.EX_USAGE exists only on Unix systems
                 sys.exit(os.EX_USAGE)
@@ -88,7 +88,7 @@ class Args(object):
 
         for opt, arg in opts:
             if opt in ("-h", "--help"):
-                print __doc__
+                print(__doc__)
                 sys.exit(0)
             elif opt in ("-s"):
                 self.s = True  
@@ -129,9 +129,9 @@ def login(host, user, passwd, port):
             # authenticating rest calls
             credentials = (qumulo.lib.auth.Credentials
                            .from_login_response)(login_results)
-    except Exception, excpt:
-        print "Error connecting to the REST server: %s" % excpt
-        print __doc__
+    except Exception as excpt:
+        print("Error connecting to the REST server: %s" % excpt)
+        print(__doc__)
         sys.exit(1)
 
     return (connection, credentials)
@@ -145,16 +145,16 @@ def pingserver(server):
 
     out, error = ping.communicate()
     if error:
-        print error.replace("ping: ","ERROR: ")
+        print(error.replace("ping: ","ERROR: "))
         sys.exit()
 
 def checkfs(file, port):
     df = subprocess.Popen(["df", file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output,error = df.communicate()
     if df.returncode: 
-        print "ERROR:",error
+        print("ERROR:",error.decode('utf-8'))
         sys.exit()
-    output = output.split("\n")[1]
+    output = output.decode('utf-8').split("\n")[1]
     columns = re.split("\s+", output)
     if ':' in columns[0]: 
         host,pathmounted = columns[0].split(":") 
@@ -205,7 +205,7 @@ def process_folder(connection, credentials, path, k, show_time):
     else:
         size = sizeof_fmt(size)
 
-    print size + "\t" + path
+    print(size + "\t" + path)
 
 
 ### Main subroutine
@@ -226,7 +226,7 @@ def main():
             else:
                 print("This is not a path mounted against a Qumulo cluster.")
     else:
-        print "So far I've only implemented the -s -k switches... sorry..."
+        print("So far I've only implemented the -s -k switches... sorry...")
         sys.exit()
 
 # Main
