@@ -12,12 +12,12 @@ the License.
 
 ## Requirements
 
-* python
+* python 3.4 (or above)
 * Qumulo API python library
 
 From a terminal window, run
 ```
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 It is recommended to use a virtual environment for python support and 
@@ -29,7 +29,7 @@ https://community.qumulo.com/qumulo/topics/virtual-environments-when-using-qumul
 
 ## Usage
 
-    python ./qdu.py -s [-k] [--time] [path]
+    python3 ./qdu.py -s [-k] [--time] [path]
     
 where
 
@@ -44,5 +44,5 @@ where
 
 Example:
    
-    python ./qdu.py -s -k --user admin --pass password /mnt/cluster/directory
+    python3 ./qdu.py -s -k --user admin --pass password /mnt/cluster/directory
 
