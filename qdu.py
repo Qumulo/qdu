@@ -151,13 +151,13 @@ def pingserver(server):
 def checkfs(file, port):
     df = subprocess.Popen(["df", file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output,error = df.communicate()
-    if df.returncode: 
+    if df.returncode:
         print("ERROR:",error.decode('utf-8'))
         sys.exit()
     output = output.decode('utf-8').split("\n")[1]
     columns = re.split("\s+", output)
-    if ':' in columns[0]: 
-        host,pathmounted = columns[0].split(":") 
+    if ':' in columns[0]:
+        host,pathmounted = columns[0].split(":")
         mountpoint = columns[-1]
         if mountpoint.startswith("/private"): mountpoint = mountpoint[8:]
         if portisopen(host, port):
