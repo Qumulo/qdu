@@ -11,28 +11,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-'''
-=== Options:
-
- -s                                 Display an entry for each specified file.  (Equivalent to -d 0)
- -k                                 Display block counts in 1024-byte (1-Kbyte) blocks.
- --time                             Equivalent to du --time --time-style=long-iso
-
-[-u | --user] username              Use 'username' for authentication
-                                        (defaults to 'admin')
-[-p | --pass] password            Use 'password' for authentication
-                                        (defaults to 'admin')
-[-P | --port] number                Use 'number' for the API server port
-                                        (defaults to 8000)
-
--h | --help                         Print out the script usage/help
-
-
-'''
-
 # Import python libraries
 import getopt
 from math import log
+import argparse
 import os
 import sys
 import time
@@ -41,6 +23,7 @@ import subprocess
 import socket
 
 from dateutil import parser, tz
+from typing import Sequence
 
 # Import Qumulo REST libraries
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -50,64 +33,48 @@ import qumulo.lib.request
 import qumulo.rest
 
 
-#### Classes
-class Args(object):
-    '''
-    This class defines a dictionary of script variables. On creation,
-    it parses the command line for user values, and returns a dictionary.
-    '''
+def parse_args(args: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description='Calculates the disk usage of a Qumulo cluster.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        'files',
+        metavar='file',
+        type=str,
+        nargs='+',
+        help='Display an entry for each specified file. (Equivalent to `du -d 0`)',
+    )
+    parser.add_argument(
+        '-k',
+        '--in-kibibytes',
+        help='Display block counts in 1024-byte (1KiB) blocks.',
+        action='store_true'
+    )
+    parser.add_argument(
+        '-u',
+        '--user',
+        type=str,
+        help='Use the given username for authentication.',
+        default='admin'
+    )
+    parser.add_argument(
+        '-p',
+        '--password',
+        type=str,
+        help='Use the given password for authentication.',
+        default='admin'
+    )
+    parser.add_argument(
+        '-P',
+        '--port',
+        type=int,
+        help='Use the given port to contact the API server for authentication.',
+        default=8000
+    )
 
-    def __init__(self, argv):
-        self.port = 8000
-        self.user = 'admin'
-        self.passwd = 'admin'
-        self.files = ['.']
-        self.s = None
-        self.k = None
-        self.time = True
+    return parser.parse_args(args)
 
-        opts = {}
-        try:
-            opts, _arg = getopt.getopt(argv[1:], "kshp:P:u:",
-                                    [
-                                     "help",
-                                     "user=",
-                                     "pass=",
-                                     "port=",
-                                    ])
-        except getopt.GetoptError as err:
-            print(err)
-            print(__doc__)
-            try:
-                # os.EX_USAGE exists only on Unix systems
-                sys.exit(os.EX_USAGE)
-            except:
-                sys.exit(1)
-
-        if _arg: self.files = _arg
-
-        for opt, arg in opts:
-            if opt in ("-h", "--help"):
-                print(__doc__)
-                sys.exit(0)
-            elif opt in ("-s"):
-                self.s = True  
-            elif opt in ("-k"):
-                self.k = True
-            elif opt in ("--time"):
-                self.time = True
-            elif opt in ("--port", "-P"):
-                self.port = arg
-            elif opt in ("--user", "-u"):
-                self.user = arg
-            elif opt in ("--pass", "-p"):
-                self.passwd = arg
-            else:
-                try:
-                    # os.EX_USAGE exists only on Unix systems
-                    sys.exit(os.EX_USAGE)
-                except:
-                    sys.exit(1)
 
 #### Subroutines
 def login(host, user, passwd, port):
@@ -210,10 +177,9 @@ def process_folder(connection, credentials, path, k, show_time):
 
 ### Main subroutine
 def main():
-    
-    args = Args(sys.argv)
+    args = parse_args(sys.argv)
 
-    if args.s:
+    if args.files:
         for file in args.files:
             isqumulo, host, mountpoint, pathmounted = checkfs(file, args.port)
             if isqumulo:
