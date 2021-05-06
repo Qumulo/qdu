@@ -1,6 +1,6 @@
 # Qumulo qdu (Qumulo du command)
 
-Licensed under the Educational Community License, Version 2.0 (ECL-2.0) (the "License"); 
+Licensed under the Educational Community License, Version 2.0 (ECL-2.0) (the "License");
 you may not use this file except in compliance with the License.  Please refer to LICENSE
 file as part of this project for details.
 
@@ -20,7 +20,7 @@ From a terminal window, run
 pip3 install -r requirements.txt
 ```
 
-It is recommended to use a virtual environment for python support and 
+It is recommended to use a virtual environment for python support and
 not change or depend upon the system version of python.  A backgrounder
 on python virtual environments can be found here:
 
@@ -28,21 +28,25 @@ https://community.qumulo.com/qumulo/topics/virtual-environments-when-using-qumul
 
 
 ## Usage
+```
+usage: qdu.py [-h] [-k] [-u USER] [-p PASSWORD] [-P PORT] file [file ...]
 
-    python3 ./qdu.py -s [-k] [--time] [path]
-    
-where
+Calculates the disk usage of files on a Qumulo cluster.
 
-    -k display size in KB
+positional arguments:
+  file                  Display an entry for each specified file. (Equivalent
+                        to `du -d 0`)
 
-    --time works like du --time (show most-recent change datetime for 
-    contents of specified path.  For now we only support an implicit
-    --time-style=long-iso
-    
-    [path] is a file path or mount point for a Qumulo cluster
-
-
-Example:
-   
-    python3 ./qdu.py -s -k --user admin --pass password /mnt/cluster/directory
-
+optional arguments:
+  -h, --help            show this help message and exit
+  -k, --in-kibibytes    Display block counts in 1024-byte (1KiB) blocks.
+                        (default: False)
+  -u USER, --user USER  Use the given username for authentication.
+                        (default: admin)
+  -p PASSWORD, --password PASSWORD
+                        Use the given password for authentication.
+                        (default: admin)
+  -P PORT, --port PORT  Use the given port to contact the API server for
+                        authentication.
+                        (default: 8000)
+```
